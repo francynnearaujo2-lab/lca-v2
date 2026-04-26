@@ -3,9 +3,8 @@ import Groq from 'groq-sdk'
 import { PLAN_PROMPT } from '@/lib/prompts'
 import { createClient } from '@/lib/supabase/server'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
 export async function POST(req: NextRequest) {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'placeholder' })
   try {
     const { profile, completedModules } = await req.json()
 

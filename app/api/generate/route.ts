@@ -3,9 +3,8 @@ import Groq from 'groq-sdk'
 import { MODULE_PROMPTS } from '@/lib/prompts'
 import { createClient } from '@/lib/supabase/server'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
 export async function POST(req: NextRequest) {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'placeholder' })
   try {
     const { module, profile } = await req.json()
     if (!module || !profile) return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
