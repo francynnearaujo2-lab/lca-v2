@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [form, setForm] = useState<Record<string, string>>({})
   const [areas, setAreas] = useState<string[]>([''])
   const [saving, setSaving] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -56,6 +59,46 @@ export default function DashboardPage() {
     if (s === 1 && areas.every(a => !a.trim())) { alert('Informe ao menos uma área de atuação'); return false }
     if (missing?.length) { alert(`Preencha: ${missing.join(', ')}`); return false }
     return true
+  }
+
+  async function importLinkedIn() {
+    if (!linkedinUrl.trim()) return
+    setImporting(true)
+    setImportMsg('')
+    try {
+      const res = await fetch('/api/fetch-linkedin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedinUrl })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      const p = data.profile
+      setForm(f => ({
+        ...f,
+        nome: p.nome || f.nome,
+        headline_atual: p.headline_atual || '',
+        sobre_atual: p.sobre_atual || '',
+        exp1_cargo: p.exp1_cargo || '',
+        exp1_empresa: p.exp1_empresa || '',
+        exp1_descricao: p.exp1_descricao || '',
+        exp2_cargo: p.exp2_cargo || '',
+        exp2_empresa: p.exp2_empresa || '',
+        exp2_descricao: p.exp2_descricao || '',
+        certificacoes: p.certificacoes || '',
+        nivel_formacao: p.nivel_formacao || '',
+        formacao: p.formacao || '',
+        cidade: p.cidade || f.cidade,
+      }))
+
+      const credits = p.creditsLeft !== undefined ? ` (${p.creditsLeft} créditos restantes)` : ''
+      setImportMsg(`✅ Perfil importado com sucesso!${credits} Revise os dados abaixo.`)
+    } catch (err: any) {
+      setImportMsg(`❌ ${err.message}`)
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function saveProfile() {
@@ -162,26 +205,59 @@ export default function DashboardPage() {
     </div>
   )
 
-  // ── STEP 2: LinkedIn Real ───────────────────────────────────────
+  // ── STEP 2: LinkedIn URL + importação ──────────────────────────
   if (step === 2) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl"><StepDots />
         <div className="card p-6 md:p-8">
-          <h2 className="text-xl font-bold mb-1">💼 Conteúdo Real do LinkedIn</h2>
-          <p className="text-slate-400 text-sm mb-1">Etapa 2 de 5 · A IA precisa do seu conteúdo ATUAL para dar feedback específico</p>
-          <div className="bg-brand/10 border border-brand/20 rounded-lg px-4 py-2 mb-6 text-sm text-brand">
-            💡 Abra seu LinkedIn agora e copie os textos reais. Quanto mais completo, mais precisa a análise.
+          <h2 className="text-xl font-bold mb-1">🔗 Perfil do LinkedIn</h2>
+          <p className="text-slate-400 text-sm mb-5">Etapa 2 de 5 · Importe seu perfil automaticamente ou preencha manualmente</p>
+
+          {/* LinkedIn URL import */}
+          <div className="bg-brand/10 border border-brand/20 rounded-xl p-4 mb-6">
+            <p className="font-semibold text-sm mb-3">⚡ Importar automaticamente pelo link</p>
+            <div className="flex gap-2">
+              <input
+                className="input flex-1 text-sm"
+                placeholder="https://linkedin.com/in/seu-usuario"
+                value={linkedinUrl}
+                onChange={e => setLinkedinUrl(e.target.value)}
+              />
+              <button
+                onClick={importLinkedIn}
+                disabled={importing || !linkedinUrl.trim()}
+                className="btn-primary text-sm py-2 px-4 flex-shrink-0 disabled:opacity-50"
+              >
+                {importing ? '⏳ Importando...' : '🚀 Importar'}
+              </button>
+            </div>
+            {importMsg && (
+              <p className={`text-xs mt-2 ${importMsg.startsWith('✅') ? 'text-emerald-400' : 'text-red-400'}`}>
+                {importMsg}
+              </p>
+            )}
+            {!importMsg && (
+              <p className="text-xs text-slate-500 mt-2">
+                Seu perfil precisa ser público para funcionar · Powered by Scrapin.io
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-slate-500">ou preencha manualmente</span>
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="label">Sua Headline atual do LinkedIn *</label>
+              <label className="label">Headline atual do LinkedIn *</label>
               <input className="input" placeholder='Ex: "Gerente de Marketing | SaaS | Growth | B2B"' value={form.headline_atual||''} onChange={e=>setF('headline_atual',e.target.value)} />
-              <p className="text-xs text-slate-500 mt-1">Cole exatamente como está no seu perfil</p>
+              <p className="text-xs text-slate-500 mt-1">Copie exatamente como está no seu perfil</p>
             </div>
 
             <div>
-              <label className="label">Sua seção "Sobre" atual *</label>
+              <label className="label">Seção "Sobre" *</label>
               <textarea className="input min-h-28" placeholder="Cole aqui o texto completo da sua seção Sobre no LinkedIn..." value={form.sobre_atual||''} onChange={e=>setF('sobre_atual',e.target.value)} />
             </div>
 
@@ -193,8 +269,8 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <label className="label">Descrição da Experiência 1 * <span className="text-slate-500 font-normal normal-case">(cole os bullets do LinkedIn)</span></label>
-              <textarea className="input min-h-24" placeholder="Cole aqui as responsabilidades e conquistas como estão no LinkedIn..." value={form.exp1_descricao||''} onChange={e=>setF('exp1_descricao',e.target.value)} />
+              <label className="label">Descrição da Experiência 1 * <span className="text-slate-500 font-normal normal-case">(bullets do LinkedIn)</span></label>
+              <textarea className="input min-h-24" placeholder="Cole as responsabilidades e conquistas como estão no LinkedIn..." value={form.exp1_descricao||''} onChange={e=>setF('exp1_descricao',e.target.value)} />
             </div>
 
             <div className="border-t border-border pt-4">
