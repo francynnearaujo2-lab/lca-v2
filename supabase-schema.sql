@@ -1,16 +1,50 @@
--- Run this in your Supabase SQL Editor
+-- LinkedIn Career Agent v2 — Schema completo
+-- Execute no Supabase SQL Editor
 
-create table if not exists profiles (
+-- Drop antigas se existirem (cuidado em produção com dados!)
+drop table if exists action_plans cascade;
+drop table if exists module_results cascade;
+drop table if exists profiles cascade;
+
+-- Perfis dos usuários
+create table profiles (
   id uuid references auth.users primary key,
-  nome text, email_display text, area text, cargo text,
-  experiencia text, setor text, especializacoes text,
-  certificacoes text, objetivo text, tipo_empresa text,
-  modalidade text, cidade text, disponibilidade text, salario text,
+  -- Identidade
+  nome text,
+  email_display text,
+  areas text,             -- "Marketing, Growth, Vendas"
+  cargo_atual text,
+  senioridade text,
+  nivel_formacao text,
+  formacao text,
+  -- LinkedIn real
+  headline_atual text,
+  sobre_atual text,
+  exp1_cargo text,
+  exp1_empresa text,
+  exp1_descricao text,
+  exp2_cargo text,
+  exp2_empresa text,
+  exp2_descricao text,
+  certificacoes text,
+  -- Currículo
+  curriculo_texto text,
+  -- Objetivos
+  objetivo text,
+  tipo_empresa text,
+  modalidade text,
+  empresas_sonho text,
+  tipo_contrato text,
+  -- Localização
+  cidade text,
+  disponibilidade text,
+  salario text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
-create table if not exists module_results (
+-- Resultados dos módulos
+create table module_results (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null,
   module_id text not null,
@@ -20,7 +54,8 @@ create table if not exists module_results (
   unique(user_id, module_id)
 );
 
-create table if not exists action_plans (
+-- Planos de ação
+create table action_plans (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null unique,
   content text not null,

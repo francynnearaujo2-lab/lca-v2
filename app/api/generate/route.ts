@@ -5,7 +5,7 @@ export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
   try {
-    const { module, profile } = await req.json()
+    const { module, profile, extra } = await req.json()
     if (!module || !profile) return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
 
     const promptFn = MODULE_PROMPTS[module]
@@ -14,17 +14,22 @@ export async function POST(req: NextRequest) {
     const key = process.env.GROQ_API_KEY
     if (!key) return NextResponse.json({ error: 'GROQ_API_KEY não configurada' }, { status: 500 })
 
+    const prompt = promptFn(profile, extra)
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: 'Você é um especialista em carreira e LinkedIn para o mercado brasileiro. Responda sempre em português do Brasil. Use Markdown rico com emojis, tabelas e listas. Seja específico, prático e entregue conteúdo pronto para usar.' },
-          { role: 'user', content: promptFn(profile) },
+          {
+            role: 'system',
+            content: 'Você é um especialista em carreira e LinkedIn para o mercado brasileiro. Responda SEMPRE em português do Brasil. Use Markdown rico: títulos, negrito, tabelas, listas, emojis. Seja MUITO específico — referencie o conteúdo real do perfil do usuário em suas análises. Nunca dê conselhos genéricos. Entregue conteúdo pronto para usar imediatamente.'
+          },
+          { role: 'user', content: prompt },
         ],
         max_tokens: 4096,
-        temperature: 0.7,
+        temperature: 0.65,
       }),
     })
 
