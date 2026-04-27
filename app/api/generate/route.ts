@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ content })
   } catch (err: any) {
-    console.error('Groq error:', err?.message)
-    return NextResponse.json({ error: 'Erro ao gerar conteúdo. Verifique a GROQ_API_KEY.' }, { status: 500 })
+    console.error('Groq error:', err?.status, err?.message)
+    return NextResponse.json({ error: err?.message || 'Erro ao gerar conteúdo.', code: err?.status }, { status: 500 })
   }
 }
