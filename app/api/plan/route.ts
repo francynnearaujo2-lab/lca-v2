@@ -1,35 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Groq from 'groq-sdk'
 import { PLAN_PROMPT } from '@/lib/prompts'
-import { createClient } from '@/lib/supabase/server'
+
+export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'placeholder' })
   try {
     const { profile, completedModules } = await req.json()
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'Você é coach de carreira sênior especializado no mercado brasileiro. Responda em português do Brasil com Markdown rico. Seja específico, com datas e ações concretas.' },
-        { role: 'user', content: PLAN_PROMPT(profile, completedModules) },
-      ],
-      max_tokens: 6000,
-      temperature: 0.7,
+    const key = process.env.GROQ_API_KEY
+    if (!key) return NextResponse.json({ error: 'GROQ_API_KEY não configurada' }, { status: 500 })
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: 'Você é coach de carreira sênior especializado no mercado brasileiro. Responda em português do Brasil com Markdown rico. Seja específico, com datas e ações concretas.' },
+          { role: 'user', content: PLAN_PROMPT(profile, completedModules) },
+        ],
+        max_tokens: 6000,
+        temperature: 0.7,
+      }),
     })
 
-    const content = completion.choices[0]?.message?.content || ''
+    if (!res.ok) {
+      const err = await res.text()
+      return NextResponse.json({ error: `Groq ${res.status}: ${err}` }, { status: 500 })
+    }
 
-    try {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('action_plans').upsert({ user_id: user.id, content, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-      }
-    } catch {}
-
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content || ''
     return NextResponse.json({ content })
   } catch (err: any) {
-    return NextResponse.json({ error: 'Erro ao gerar plano.' }, { status: 500 })
+    return NextResponse.json({ error: err.message || 'Erro ao gerar plano.' }, { status: 500 })
   }
 }
