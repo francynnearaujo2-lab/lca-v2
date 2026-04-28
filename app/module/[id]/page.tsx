@@ -19,6 +19,7 @@ export default function ModulePage() {
   const [copied, setCopied] = useState(false)
   const [jobDesc, setJobDesc] = useState('')
   const [showJobInput, setShowJobInput] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
   const isPlan = id === 'plano90'
   const isJobMatch = id === 'match_vaga'
@@ -45,7 +46,7 @@ export default function ModulePage() {
   async function generate() {
     if (!profile) return
     if (isJobMatch && !jobDesc.trim()) { setShowJobInput(true); return }
-    setLoading(true); setContent('')
+    setLoading(true); setContent(''); setRetrying(false)
     try {
       const endpoint = isPlan ? '/api/plan' : '/api/generate'
       const body = isPlan
@@ -53,12 +54,22 @@ export default function ModulePage() {
         : { module: id, profile: { ...profile, areas: profile.areas }, extra: isJobMatch ? jobDesc : undefined }
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
+      if (res.status === 429) {
+        setRetrying(true)
+        await new Promise(r => setTimeout(r, 8000))
+        setRetrying(false)
+        const res2 = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        const data2 = await res2.json()
+        if (data2.error) throw new Error(data2.error)
+        setContent(data2.content)
+        return
+      }
       if (data.error) throw new Error(data.error)
       setContent(data.content)
     } catch (e: any) {
       setContent(`**Erro:** ${e.message}`)
     } finally {
-      setLoading(false)
+      setLoading(false); setRetrying(false)
     }
   }
 
@@ -141,8 +152,17 @@ export default function ModulePage() {
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-12 h-12 border-4 border-border border-t-brand rounded-full spin" />
               <div className="text-center">
-                <p className="font-semibold">Gerando {mod?.title}...</p>
-                <p className="text-slate-400 text-sm mt-1 animate-pulse">IA analisando seu perfil real · {mod?.time}</p>
+                {retrying ? (
+                  <>
+                    <p className="font-semibold text-amber-400">⏳ Alta demanda no servidor...</p>
+                    <p className="text-slate-400 text-sm mt-1">Tentando novamente com servidor alternativo · aguarde</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">Gerando {mod?.title}...</p>
+                    <p className="text-slate-400 text-sm mt-1 animate-pulse">IA analisando seu perfil real · {mod?.time}</p>
+                  </>
+                )}
               </div>
             </div>
           )}
