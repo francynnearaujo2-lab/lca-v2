@@ -23,20 +23,17 @@ export default function SignupPage() {
     })
 
     if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
+      const msg = error.message.includes('already registered')
+        ? 'Este email já está cadastrado. Tente fazer login.'
+        : error.message
+      setError(msg); setLoading(false); return
     }
 
-    // Se a sessão foi criada (confirmação desativada no Supabase), vai direto ao dashboard
     if (data?.session) {
-      router.push('/dashboard')
-      return
+      router.push('/dashboard'); return
     }
 
-    // Se precisa confirmar email
-    setNeedsConfirm(true)
-    setLoading(false)
+    setNeedsConfirm(true); setLoading(false)
   }
 
   if (needsConfirm) return (
@@ -47,15 +44,12 @@ export default function SignupPage() {
         <p className="text-slate-400 mb-2">
           Enviamos um link para <strong className="text-white">{email}</strong>.
         </p>
-        <p className="text-slate-500 text-sm mb-6">
-          Não encontrou? Verifique o spam ou aguarde alguns minutos.
-        </p>
-        <div className="card p-4 text-sm text-slate-400 mb-6">
-          💡 <strong className="text-white">Dica:</strong> Se você é o administrador do app, desative a confirmação de email em{' '}
-          <span className="text-brand">Supabase → Authentication → Providers → Email → desmarque "Confirm email"</span>
-          {' '}para entrar direto sem precisar confirmar.
+        <p className="text-slate-500 text-sm mb-6">Não encontrou? Verifique o spam.</p>
+        <div className="card p-4 text-left text-sm text-slate-400 mb-6">
+          <p className="text-white font-semibold mb-1">💡 Para entrar sem confirmar:</p>
+          <p>Supabase → Authentication → Providers → Email → desmarque <strong>"Confirm email"</strong> → Save</p>
         </div>
-        <Link href="/login" className="btn-primary inline-flex">Já confirmei, entrar →</Link>
+        <Link href="/login" className="btn-primary inline-flex">Já confirmei → Entrar</Link>
       </div>
     </div>
   )
@@ -64,34 +58,41 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">💼</div>
-            <span className="font-bold text-lg">LinkedIn <span className="text-brand">Career Agent</span></span>
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center text-xl">💼</div>
+            <span className="font-bold text-xl">Career<span className="text-brand">Agent</span></span>
           </Link>
           <h1 className="text-2xl font-bold mb-1">Crie sua conta grátis</h1>
           <p className="text-slate-400 text-sm">Sem cartão de crédito · Acesso imediato</p>
         </div>
+
         <form onSubmit={handleSignup} className="card p-6 space-y-4">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg px-4 py-3 text-sm">
-              {error.includes('already registered') ? '⚠️ Este email já está cadastrado. Tente fazer login.' : error}
+              ⚠️ {error}
             </div>
           )}
           <div>
             <label className="label">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="input" placeholder="seu@email.com" required />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              className="input" placeholder="seu@email.com" required />
           </div>
           <div>
-            <label className="label">Senha (mínimo 6 caracteres)</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="input" placeholder="••••••••" minLength={6} required />
+            <label className="label">Senha <span className="text-slate-500 font-normal normal-case">(mínimo 6 caracteres)</span></label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+              className="input" placeholder="••••••••" minLength={6} required />
           </div>
-          <button type="submit" disabled={loading} className="btn-gold w-full py-3 mt-2 disabled:opacity-50">
+          <button type="submit" disabled={loading} className="btn-gold w-full py-3 disabled:opacity-50">
             {loading ? 'Criando conta...' : '🚀 Criar conta grátis'}
           </button>
+          <p className="text-xs text-slate-500 text-center">
+            Ao criar sua conta você concorda com nossos termos de uso.
+          </p>
         </form>
-        <p className="text-center text-slate-400 text-sm mt-6">
+
+        <p className="text-center text-slate-400 text-sm mt-5">
           Já tem conta?{' '}
-          <Link href="/login" className="text-brand hover:underline">Entrar</Link>
+          <Link href="/login" className="text-brand hover:underline font-medium">Entrar</Link>
         </p>
       </div>
     </div>

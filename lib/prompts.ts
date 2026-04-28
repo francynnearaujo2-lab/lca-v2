@@ -6,6 +6,7 @@ export type Profile = {
   // Identidade
   nome: string
   email_display?: string
+  situacao?: string      // desempregado / transicao / formado / insatisfeito
   areas: string          // até 3 áreas separadas por vírgula: "Marketing, Growth, Vendas"
   cargo_atual: string
   senioridade: string    // Júnior / Pleno / Sênior / Gerente / Diretor / C-Level
@@ -92,6 +93,11 @@ export const MODULES = [
 export const MODULE_PROMPTS: Record<string, (p: Profile, extra?: string) => string> = {
 
   diagnostico: (p) => `Você é um consultor sênior de carreira e LinkedIn com 15 anos de experiência no mercado brasileiro. Você vai analisar o perfil REAL desta pessoa — não dê conselhos genéricos, comente linha por linha o que está errado e o que precisa mudar.
+
+${p.situacao === 'desempregado' ? '⚠️ CONTEXTO URGENTE: Esta pessoa está desempregada e precisa de resultados rápidos. Priorize ações de impacto imediato.' : ''}
+${p.situacao === 'transicao' ? '🔄 CONTEXTO ESPECIAL: Esta pessoa quer mudar de área. Foque em como transferir e reposicionar competências existentes para o novo setor.' : ''}
+${p.situacao === 'formado' ? '🎓 CONTEXTO: Primeiro emprego. Foque em como valorizar experiências acadêmicas, estágios e projetos sem experiência profissional formal.' : ''}
+${p.situacao === 'insatisfeito' ? '🤫 CONTEXTO SIGILOSO: Esta pessoa está empregada mas quer mudar. Toda estratégia deve preservar o sigilo em relação ao empregador atual.' : ''}
 
 ## DADOS REAIS DO PERFIL:
 
